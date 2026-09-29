@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arivumadhi D R — Game Designer & Developer Portfolio</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Space Grotesk, JetBrains Mono, Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#060911',
+            hudslate: '#0f172a',
+            hudcard: 'rgba(15, 23, 42, 0.88)',
+            cyan: {
+              400: '#00f0ff',
+              500: '#00d0e0',
+              900: '#002f38',
+            },
+            crimson: '#ff2a5f',
+            gold: '#ffc700',
+            neongreen: '#00ff88',
+            blueprint: '#0284c7'
+          },
+          fontFamily: {
+            space: ['Space Grotesk', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom HUD Styles & Animations -->
+  <style>
+    :root {
+      --cyan-glow: rgba(0, 240, 255, 0.4);
+      --crimson-glow: rgba(255, 42, 95, 0.4);
+      --gold-glow: rgba(255, 199, 0, 0.4);
+    }
+
+    body {
+      background-color: #060911;
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Ambient CRT Scanline Overlay */
+    .scanline-overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0, 0, 0, 0.28) 50%,
+        rgba(0, 0, 0, 0.28)
+      );
+      background-size: 100% 4px;
+      z-index: 900;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    /* Sci-Fi HUD Chamfered Panel Box */
+    .hud-box {
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      backdrop-filter: blur(12px);
+      position: relative;
+      clip-path: polygon(
+        0 0, 
+        calc(100% - 16px) 0, 
+        100% 16px, 
+        100% 100%, 
+        16px 100%, 
+        0 calc(100% - 16px)
+      );
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .hud-box:hover {
+      border-color: rgba(0, 240, 255, 0.5);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+    }
+
+    .hud-box-gold {
+      border-color: rgba(255, 199, 0, 0.3);
+    }
+    .hud-box-gold:hover {
+      border-color: rgba(255, 199, 0, 0.6);
+      box-shadow: 0 0 20px rgba(255, 199, 0, 0.15);
+    }
+
+    .hud-corner-tl {
+      position: absolute;
+      top: 0; left: 0;
+      width: 8px; height: 8px;
+      border-top: 2px solid #00f0ff;
+      border-left: 2px solid #00f0ff;
+    }
+
+    .hud-corner-br {
+      position: absolute;
+      bottom: 0; right: 0;
+      width: 8px; height: 8px;
+      border-bottom: 2px solid #00f0ff;
+      border-right: 2px solid #00f0ff;
+    }
+
+    /* Engine Blueprint Grid Background */
+    .blueprint-bg {
+      background-color: #081020;
+      background-image: 
+        linear-gradient(rgba(0, 240, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.1) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #060911; }
+    ::-webkit-scrollbar-thumb { background: #00f0ff; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #ff2a5f; }
+
+    /* Text Glow Utilities */
+    .text-glow-cyan { text-shadow: 0 0 12px rgba(0, 240, 255, 0.6); }
+    .text-glow-crimson { text-shadow: 0 0 12px rgba(255, 42, 95, 0.6); }
+    .text-glow-gold { text-shadow: 0 0 12px rgba(255, 199, 0, 0.6); }
+
+    /* Scroll Reveal Animation */
+    .reveal-item {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-item.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body class="relative min-h-screen text-slate-100 selection:bg-cyan-400 selection:text-black">
+
+<!-- Ambient Visual Effects -->
+<div class="scanline-overlay"></div>
+
+<!-- Header Nav -->
+<header class="sticky top-0 z-50 bg-obsidian/90 backdrop-blur-md border-b border-cyan-400/20 px-4 lg:px-8 py-3">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    
+    <!-- Logo & Live Status Badge -->
+    <div class="flex items-center gap-4">
+      <a href="#" class="font-mono text-sm sm:text-base font-bold text-cyan-400 tracking-wider flex items-center gap-2 group">
+        <span class="w-3 h-3 bg-cyan-400 rounded-sm group-hover:rotate-45 transition-transform duration-300 shadow-[0_0_8px_#00f0ff]"></span>
+        <span>ARIVUMADHI.ENGINE</span>
+        <span class="text-xs text-crimson font-normal">v2.4</span>
+      </a>
+      
+      <!-- Status Pill -->
+      <div class="hidden md:flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/40 px-3 py-1 rounded-full text-[11px] font-mono text-neongreen">
+        <span class="w-2 h-2 rounded-full bg-neongreen animate-ping"></span>
+        <span>STATUS: AVAILABLE FOR PROJECTS / GAME JAMS</span>
+      </div>
+    </div>
+
+    <!-- Navigation Menu (Desktop) -->
+    <nav class="hidden xl:flex items-center gap-6 font-mono text-xs">
+      <a href="#viewport" class="text-slate-400 hover:text-cyan-400 transition-colors">[01] VIEWPORT</a>
+      <a href="#about" class="text-slate-400 hover:text-cyan-400 transition-colors">[02] ABOUT</a>
+      <a href="#skills" class="text-slate-400 hover:text-cyan-400 transition-colors">[03] SKILLS</a>
+      <a href="#projects" class="text-slate-400 hover:text-cyan-400 transition-colors">[04] PROJECTS</a>
+      <a href="#logic" class="text-slate-400 hover:text-cyan-400 transition-colors">[05] LOGIC</a>
+      <a href="#contact" class="text-slate-400 hover:text-cyan-400 transition-colors">[06] CONTACT</a>
+    </nav>
+
+    <!-- Header Action Button & Mobile Drawer Toggle -->
+    <div class="flex items-center gap-3">
+      <a href="#contact" class="font-mono text-xs font-bold bg-cyan-400 hover:bg-cyan-300 text-obsidian px-4 py-2 rounded transition-all shadow-[0_0_15px_rgba(0,240,255,0.4)] flex items-center gap-1.5">
+        <span>⚡</span> HIRE ME / COLLABORATE
+      </a>
+      <button id="mobileNavBtn" class="xl:hidden p-2 text-cyan-400 font-mono text-lg border border-cyan-400/30 rounded bg-hudslate/50">
+        [☰]
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Collapsible Menu Drawer -->
+  <div id="mobileDrawer" class="hidden xl:hidden mt-3 pt-3 border-t border-cyan-400/20 flex flex-col gap-3 font-mono text-xs pb-2">
+    <a href="#viewport" class="text-slate-300 hover:text-cyan-400 p-1">[01] VIEWPORT</a>
+    <a href="#about" class="text-slate-300 hover:text-cyan-400 p-1">[02] ABOUT</a>
+    <a href="#skills" class="text-slate-300 hover:text-cyan-400 p-1">[03] SKILLS</a>
+    <a href="#projects" class="text-slate-300 hover:text-cyan-400 p-1">[04] PROJECTS</a>
+    <a href="#logic" class="text-slate-300 hover:text-cyan-400 p-1">[05] LOGIC</a>
+    <a href="#contact" class="text-slate-300 hover:text-cyan-400 p-1">[06] CONTACT</a>
+  </div>
+</header>
+
+<main class="relative z-10 max-w-7xl mx-auto px-4 lg:px-8 space-y-24 py-8">
+
+  <!-- HERO SECTION -->
+  <section id="viewport" class="pt-4 scroll-mt-24 space-y-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      
+      <!-- Hero Text Column -->
+      <div class="lg:col-span-6 space-y-6">
+        <div class="flex items-center gap-2 font-mono text-xs text-cyan-400">
+          <span class="px-2 py-0.5 bg-cyan-400/10 border border-cyan-400/30 rounded">ENGINE_CORE_V2.4</span>
+          <span>● PARADIGM: GAME DESIGN &amp; MECHANICS</span>
+        </div>
+
+        <h1 class="font-space text-3xl sm:text-5xl xl:text-6xl font-bold leading-tight">
+          Designing Immersive <br>
+          <span class="text-cyan-400 text-glow-cyan">Game Systems</span> &amp; <br>
+          <span class="text-crimson text-glow-crimson">Spatial Mechanics</span>
+        </h1>
+
+        <p class="text-slate-300 text-sm sm:text-base leading-relaxed font-sans max-w-xl">
+          Grade 11 Student &amp; Game Developer crafting responsive combat loops, physics puzzles, and interactive level blockouts with an emphasis on player feel and tight mechanics.
+        </p>
+
+        <!-- Dynamic Typewriter Console Log -->
+        <div class="bg-obsidian/90 border-l-2 border-cyan-400 p-3 rounded-r font-mono text-xs text-slate-300 shadow-inner flex items-center gap-2">
+          <span class="text-neongreen font-bold">&gt;</span>
+          <span id="typewriterText" class="text-cyan-300"></span>
+          <span class="w-2 h-4 bg-cyan-400 inline-block animate-pulse"></span>
+        </div>
+
+        <!-- Action CTAs -->
+        <div class="flex flex-wrap items-center gap-4 pt-2 font-mono text-xs">
+          <a href="#projects" class="hud-box px-6 py-3 bg-crimson/20 text-crimson border-crimson/50 hover:bg-crimson hover:text-white transition-all font-bold flex items-center gap-2">
+            <span>🎮</span> EXPLORE PROJECTS
+          </a>
+          <a href="#playground" class="hud-box px-6 py-3 text-cyan-400 hover:bg-cyan-400/10 transition-all font-bold flex items-center gap-2">
+            <span>🕹️</span> TEST LIVE VIEWPORT
+          </a>
+        </div>
+      </div>
+
+      <!-- Hero Interactive Engine Viewport (HTML5 Canvas Playground) -->
+      <div id="playground" class="lg:col-span-6">
+        <div class="hud-box p-4 space-y-3">
+          
+          <!-- Viewport Header Bar -->
+          <div class="flex justify-between items-center border-b border-cyan-400/20 pb-2 font-mono text-xs">
+            <div class="flex items-center gap-2 text-cyan-400 font-bold">
+              <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+              2D_PHYSICS_VIEWPORT.SCENE
+            </div>
+            <div class="text-slate-400 text-[11px] flex gap-3">
+              <span>FPS: <strong id="canvasFps" class="text-neongreen">60.0</strong></span>
+              <span>TIME: <strong id="frameTime" class="text-gold">16.6ms</strong></span>
+            </div>
+          </div>
+
+          <!-- Canvas Container -->
+          <div class="relative w-full h-[320px] bg-obsidian rounded border border-cyan-400/20 overflow-hidden group">
+            <canvas id="engineCanvas" class="w-full h-full cursor-crosshair block"></canvas>
+
+            <!-- HUD Overlay Stats -->
+            <div class="absolute top-2 left-2 pointer-events-none font-mono text-[10px] space-y-1 bg-obsidian/80 p-2 rounded border border-slate-800 text-slate-300">
+              <div>ENTITY_POS: <span id="entityPos" class="text-cyan-400">X: 0 | Y: 0</span></div>
+              <div>VELOCITY: <span id="entityVel" class="text-crimson">0.00 px/s</span></div>
+              <div>PHYSICS STATE: <span id="physicsState" class="text-gold">AIRBORNE</span></div>
+            </div>
+
+            <!-- Viewport Overlay Instructions -->
+            <div class="absolute bottom-2 right-2 pointer-events-none font-mono text-[10px] bg-obsidian/80 px-2 py-1 rounded border border-slate-800 text-slate-400">
+              [WASD / ARROWS] Move &amp; Jump | [CLICK &amp; DRAG] Toss Ball
+            </div>
+          </div>
+
+          <!-- Viewport Controls & Toggles -->
+          <div class="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] pt-1">
+            <div class="flex flex-wrap gap-1.5">
+              <button id="toggleGrid" class="px-2.5 py-1 bg-cyan-400/10 border border-cyan-400/40 text-cyan-300 rounded hover:bg-cyan-400/20">
+                GRID: ON
+              </button>
+              <button id="toggleWireframe" class="px-2.5 py-1 bg-slate-800 border border-slate-700 text-slate-300 rounded hover:bg-slate-700">
+                WIREFRAME: OFF
+              </button>
+              <button id="toggleGravity" class="px-2.5 py-1 bg-slate-800 border border-slate-700 text-slate-300 rounded hover:bg-slate-700">
+                GRAVITY: DOWN
+              </button>
+            </div>
+            <button id="resetPhysics" class="px-2.5 py-1 bg-crimson/20 border border-crimson/40 text-crimson rounded hover:bg-crimson hover:text-white">
+              ↺ RESET BALL
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ABOUT SECTION -->
+  <section id="about" class="scroll-mt-24 space-y-8">
+    <div class="flex items-center gap-3 border-b border-cyan-400/20 pb-3">
+      <span class="font-mono text-xs text-cyan-400 bg-cyan-400/10 border border-cyan-400/30 px-2 py-1 rounded">[02]</span>
+      <h2 class="font-space text-2xl sm:text-3xl font-bold text-white">DEVELOPER INSPECTOR &amp; STAT SHEET</h2>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- Left: Character Stat Card HUD -->
+      <div class="lg:col-span-5 hud-box p-6 space-y-5">
+        <div class="hud-corner-tl"></div>
+        <div class="hud-corner-br"></div>
+
+        <div class="flex items-center justify-between border-b border-cyan-400/20 pb-3">
+          <div>
+            <div class="font-space font-bold text-lg text-white">ARIVUMADHI D R</div>
+            <div class="font-mono text-xs text-cyan-400">CLASS: GAME SYSTEMS ARCHITECT</div>
+          </div>
+          <span class="font-mono text-[10px] bg-gold/20 border border-gold/40 text-gold px-2 py-1 rounded">
+            GRADE 11
+          </span>
+        </div>
+
+        <!-- Developer Attribute Matrix -->
+        <div class="font-mono text-xs space-y-3">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+            <span class="text-slate-400">PRIMARY ENGINES:</span>
+            <span class="text-cyan-300 font-bold">UNITY &amp; UNREAL ENGINE</span>
+          </div>
+          <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+            <span class="text-slate-400">SPECIALIZATION:</span>
+            <span class="text-crimson font-bold">GAME MECHANICS &amp; LOGIC</span>
+          </div>
+          <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+            <span class="text-slate-400">PROTOTYPES BUILT:</span>
+            <span class="text-neongreen font-bold">5+ PLAYABLE DEMOS</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400">ACADEMIC LEVEL:</span>
+            <span class="text-gold font-bold">11TH GRADE STUDENT</span>
+          </div>
+        </div>
+
+        <!-- Core Philosophy Quote Box -->
+        <div class="bg-obsidian/80 border-l-2 border-gold p-3 rounded-r font-mono text-xs text-slate-300 space-y-1">
+          <div class="text-[10px] text-gold font-bold">// CORE DESIGN PHILOSOPHY</div>
+          <p class="italic text-slate-200">
+            "Player feel and mechanical depth come before visual noise. Every mechanic must communicate responsive feedback to the player."
+          </p>
+        </div>
+      </div>
+
+      <!-- Right: Detailed Developer Overview -->
+      <div class="lg:col-span-7 space-y-6 font-sans">
+        
+        <div class="hud-box p-6 space-y-4">
+          <h3 class="font-space text-xl font-bold text-cyan-400 flex items-center gap-2">
+            <span>▼</span> Architect Biography &amp; Quest Line
+          </h3>
+          <p class="text-slate-300 leading-relaxed text-sm md:text-base">
+            I am <strong class="text-white">Arivumadhi D R</strong>, an 11th grade high school student with a deep passion for game design, interactive gameplay logic, and physics-driven systems.
+          </p>
+          <p class="text-slate-400 leading-relaxed text-sm">
+            While many focus solely on high-poly visuals, my obsession lies in the math and logic behind the screen: combat hitboxes, momentum physics, player traversal responsiveness, and AI state machines. Whether scripting in C# for Unity or visually laying out nodes in Unreal Engine Blueprints, I strive to make game interactions feel satisfying and intuitive.
+          </p>
+        </div>
+
+        <!-- Quick Attribute Counters Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono">
+          
+          <div class="hud-box p-4 border-cyan-400/30 text-center">
+            <div class="text-2xl font-bold text-cyan-400 font-space">85%</div>
+            <div class="text-[11px] text-slate-400 mt-1">MECHANICS RATIO</div>
+          </div>
+
+          <div class="hud-box p-4 border-crimson/30 text-center">
+            <div class="text-2xl font-bold text-crimson font-space">100%</div>
+            <div class="text-[11px] text-slate-400 mt-1">PASSION &amp; DRIVE</div>
+          </div>
+
+          <div class="hud-box p-4 border-gold/30 text-center">
+            <div class="text-2xl font-bold text-gold font-space">24/7</div>
+            <div class="text-[11px] text-slate-400 mt-1">LOGIC ITERATION</div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SKILLS MATRIX & INTERACTIVE INSPECTOR -->
+  <section id="skills" class="scroll-mt-24 space-y-8">
+    <div class="flex items-center gap-3 border-b border-cyan-400/20 pb-3">
+      <span class="font-mono text-xs text-crimson bg-crimson/10 border border-crimson/30 px-2 py-1 rounded">[03]</span>
+      <h2 class="font-space text-2xl sm:text-3xl font-bold text-white">SKILLS MATRIX &amp; PROPERTY INSPECTOR</h2>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Left Column: Skill List with Animated Progress Bars -->
+      <div class="lg:col-span-6 space-y-4 font-mono">
+        <div class="text-xs text-slate-400 mb-2">// SELECT A SKILL TO INSPECT DETAILED SPECIFICATIONS</div>
+
+        <div id="skillsContainer" class="space-y-3">
+          <!-- Skill items generated dynamically in JS for interactive inspection -->
+        </div>
+      </div>
+
+      <!-- Right Column: Interactive Skill Inspector Panel -->
+      <div class="lg:col-span-6">
+        <div id="inspectorBox" class="hud-box hud-box-gold p-6 space-y-5 sticky top-20">
+          <div class="hud-corner-tl"></div>
+          <div class="hud-corner-br"></div>
+
+          <div class="flex justify-between items-center border-b border-gold/30 pb-3">
+            <div>
+              <div class="font-mono text-[10px] text-gold uppercase tracking-wider">SKILL_INSPECTOR.PROP</div>
+              <h3 id="inspectorTitle" class="font-space text-xl font-bold text-white">Game Mechanics &amp; Systems</h3>
+            </div>
+            <span id="inspectorLevel" class="font-mono text-xs font-bold text-neongreen bg-neongreen/10 border border-neongreen/30 px-2.5 py-1 rounded">
+              85% PROFICIENCY
+            </span>
+          </div>
+
+          <p id="inspectorDesc" class="text-slate-300 text-sm leading-relaxed font-sans">
+            Designing combat loops, animation frame canceling, hitboxes/hurtboxes, and player movement feedback algorithms.
+          </p>
+
+          <!-- Code / Blueprint Preview Snippet -->
+          <div class="space-y-1">
+            <div class="font-mono text-[10px] text-slate-400 flex justify-between">
+              <span>SAMPLE_LOGIC_SNIPPET</span>
+              <span id="inspectorLang" class="text-cyan-400">C# / UNITY</span>
+            </div>
+            <pre class="bg-obsidian/90 p-3 rounded border border-slate-800 font-mono text-[11px] text-cyan-300 overflow-x-auto"><code id="inspectorCode">void ApplyKnockback(Vector3 direction, float force) {
+  rb.AddForce(direction.normalized * force, ForceMode.Impulse);
+  SetState(CharacterState.Stunned);
+}</code></pre>
+          </div>
+
+          <!-- Inspector Specs Grid -->
+          <div class="grid grid-cols-2 gap-3 font-mono text-xs pt-2 border-t border-slate-800">
+            <div class="bg-obsidian/60 p-2.5 rounded border border-slate-800">
+              <span class="text-slate-500 text-[10px] block">RECOMMENDED ENGINES</span>
+              <span id="inspectorEngines" class="text-white font-bold">Unity, Unreal Engine 5</span>
+            </div>
+            <div class="bg-obsidian/60 p-2.5 rounded border border-slate-800">
+              <span class="text-slate-500 text-[10px] block">PROJECT APPLICATION</span>
+              <span id="inspectorUsage" class="text-gold font-bold">Action RPGs, Platformers</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FEATURED PROJECTS / QUEST LOG -->
+  <section id="projects" class="scroll-mt-24 space-y-8">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-400/20 pb-3">
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-xs text-gold bg-gold/10 border border-gold/30 px-2 py-1 rounded">[04]</span>
+        <h2 class="font-space text-2xl sm:text-3xl font-bold text-white">QUEST LOG &amp; FEATURED PROTOTYPES</h2>
+      </div>
+
+      <!-- Filter Buttons Pipeline -->
+      <div id="projectFilters" class="flex flex-wrap gap-2 font-mono text-xs">
+        <button data-filter="all" class="filter-btn active px-3 py-1.5 bg-cyan-400 text-obsidian font-bold rounded transition-all">
+          [ALL PROJECTS]
+        </button>
+        <button data-filter="combat" class="filter-btn px-3 py-1.5 bg-slate-800 text-slate-300 hover:text-cyan-400 rounded transition-all">
+          [COMBAT &amp; RPG]
+        </button>
+        <button data-filter="puzzle" class="filter-btn px-3 py-1.5 bg-slate-800 text-slate-300 hover:text-cyan-400 rounded transition-all">
+          [PUZZLE &amp; PHYSICS]
+        </button>
+        <button data-filter="tools" class="filter-btn px-3 py-1.5 bg-slate-800 text-slate-300 hover:text-cyan-400 rounded transition-all">
+          [SYSTEMS &amp; TOOLS]
+        </button>
+      </div>
+    </div>
+
+    <!-- Project Cards Grid -->
+    <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Project items populated dynamically in JS -->
+    </div>
+  </section>
+
+  <!-- GAME LOGIC / VISUAL BLUEPRINT SHOWCASE -->
+  <section id="logic" class="scroll-mt-24 space-y-8">
+    <div class="flex items-center gap-3 border-b border-cyan-400/20 pb-3">
+      <span class="font-mono text-xs text-neongreen bg-neongreen/10 border border-neongreen/30 px-2 py-1 rounded">[05]</span>
+      <h2 class="font-space text-2xl sm:text-3xl font-bold text-white">VISUAL BLUEPRINT LOGIC GRAPH</h2>
+    </div>
+
+    <div class="hud-box p-6 space-y-4">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 font-mono text-xs border-b border-cyan-400/20 pb-3">
+        <div class="text-cyan-400 flex items-center gap-2 font-bold">
+          <span>❖</span> EVENT_GRAPH: COMBO_ATTACK_SEQUENCE.BLUEPRINT
+        </div>
+        <div class="text-slate-400 text-[11px]">
+          [CLICK &amp; DRAG NODES] To re-arrange execution flow
+        </div>
+      </div>
+
+      <!-- Draggable Node Graph Canvas Container -->
+      <div class="relative w-full h-[400px] blueprint-bg rounded border border-cyan-400/30 overflow-hidden relative" id="nodeGraphContainer">
+        
+        <!-- SVG Connections Layer -->
+        <svg id="nodeSvg" class="absolute inset-0 w-full h-full pointer-events-none z-0"></svg>
+
+        <!-- Node 1: Event Node -->
+        <div class="blueprint-node absolute z-10 w-52 bg-slate-900 border border-red-500 rounded shadow-xl cursor-move text-xs font-mono select-none" id="node1" style="top: 40px; left: 40px;">
+          <div class="bg-red-900/80 text-white px-3 py-1.5 font-bold flex justify-between items-center rounded-t border-b border-red-500/40">
+            <span>Event OnPrimaryAttack</span>
+            <span class="w-2.5 h-2.5 bg-red-400 rounded-full"></span>
+          </div>
+          <div class="p-3 space-y-2 text-slate-300">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500">Exec Out ▶</span>
+              <span class="w-3 h-3 bg-white border border-slate-900 rounded-full inline-block node-pin" data-pin="n1-out"></span>
+            </div>
+            <div class="text-[10px] text-slate-500">Triggered by Player Left Click</div>
+          </div>
+        </div>
+
+        <!-- Node 2: Branch Node -->
+        <div class="blueprint-node absolute z-10 w-56 bg-slate-900 border border-amber-500 rounded shadow-xl cursor-move text-xs font-mono select-none" id="node2" style="top: 50px; left: 320px;">
+          <div class="bg-amber-900/80 text-white px-3 py-1.5 font-bold flex justify-between items-center rounded-t border-b border-amber-500/40">
+            <span>Branch (Stamina Check)</span>
+            <span class="w-2.5 h-2.5 bg-amber-400 rounded-full"></span>
+          </div>
+          <div class="p-3 space-y-2 text-slate-300">
+            <div class="flex justify-between items-center">
+              <span class="w-3 h-3 bg-white border border-slate-900 rounded-full inline-block node-pin" data-pin="n2-in"></span>
+              <span class="text-slate-400">▶ Exec In</span>
+            </div>
+            <div class="flex justify-between items-center pt-1">
+              <span class="text-neongreen">True ▶</span>
+              <span class="w-3 h-3 bg-neongreen border border-slate-900 rounded-full inline-block node-pin" data-pin="n2-true"></span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-crimson">False ▶</span>
+              <span class="w-3 h-3 bg-crimson border border-slate-900 rounded-full inline-block node-pin" data-pin="n2-false"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Node 3: Trigger Hitbox -->
+        <div class="blueprint-node absolute z-10 w-56 bg-slate-900 border border-cyan-400 rounded shadow-xl cursor-move text-xs font-mono select-none" id="node3" style="top: 210px; left: 620px;">
+          <div class="bg-cyan-900/80 text-white px-3 py-1.5 font-bold flex justify-between items-center rounded-t border-b border-cyan-400/40">
+            <span>Exec TriggerHitbox</span>
+            <span class="w-2.5 h-2.5 bg-cyan-400 rounded-full"></span>
+          </div>
+          <div class="p-3 space-y-2 text-slate-300">
+            <div class="flex justify-between items-center">
+              <span class="w-3 h-3 bg-neongreen border border-slate-900 rounded-full inline-block node-pin" data-pin="n3-in"></span>
+              <span class="text-slate-400">▶ Exec In</span>
+            </div>
+            <div class="text-[10px] text-slate-400">Radius: <strong class="text-cyan-300">2.5m</strong> | Damage: <strong class="text-crimson">45.0</strong></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT & MULTIPLAYER CONNECT -->
+  <section id="contact" class="scroll-mt-24 space-y-8">
+    <div class="flex items-center gap-3 border-b border-cyan-400/20 pb-3">
+      <span class="font-mono text-xs text-gold bg-gold/10 border border-gold/30 px-2 py-1 rounded">[06]</span>
+      <h2 class="font-space text-2xl sm:text-3xl font-bold text-white">INITIATE COLLABORATION / TERMINAL</h2>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- Contact Direct Info Card -->
+      <div class="lg:col-span-5 hud-box p-6 space-y-6">
+        <div class="hud-corner-tl"></div>
+        <div class="hud-corner-br"></div>
+
+        <div class="space-y-2">
+          <h3 class="font-space text-xl font-bold text-cyan-400">Multiplayer Terminal</h3>
+          <p class="text-slate-300 text-sm leading-relaxed font-sans">
+            Ready to collaborate on game jams, prototype gameplay mechanics, or discuss game design opportunities.
+          </p>
+        </div>
+
+        <div class="space-y-4 font-mono text-xs">
+          
+          <a href="mailto:arivumadhidr@gmail.com" class="block bg-obsidian/80 p-3 rounded border border-slate-800 hover:border-cyan-400 transition-all group">
+            <div class="text-slate-500 text-[10px]">DIRECT EMAIL PROTOCOL</div>
+            <div class="text-cyan-300 font-bold group-hover:text-white transition-colors">arivumadhidr@gmail.com</div>
+          </a>
+
+          <div class="bg-obsidian/80 p-3 rounded border border-slate-800">
+            <div class="text-slate-500 text-[10px]">CURRENT LOCATION</div>
+            <div class="text-slate-300 font-bold">TAMIL NADU, INDIA</div>
+          </div>
+
+          <!-- Social Links Matrix -->
+          <div class="pt-2 space-y-2">
+            <div class="text-slate-400 text-[11px]">NETWORKS &amp; PLATFORMS:</div>
+            <div class="grid grid-cols-2 gap-2">
+              <a href="#" class="px-3 py-2 bg-slate-900 border border-slate-800 text-slate-300 hover:text-cyan-400 text-center rounded transition-all">
+                [GITHUB]
+              </a>
+              <a href="#" class="px-3 py-2 bg-slate-900 border border-slate-800 text-slate-300 hover:text-cyan-400 text-center rounded transition-all">
+                [ITCH.IO]
+              </a>
+              <a href="#" class="px-3 py-2 bg-slate-900 border border-slate-800 text-slate-300 hover:text-cyan-400 text-center rounded transition-all">
+                [LINKEDIN]
+              </a>
+              <a href="#" class="px-3 py-2 bg-slate-900 border border-slate-800 text-slate-300 hover:text-cyan-400 text-center rounded transition-all">
+                [DISCORD]
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Interactive HUD Terminal Contact Form -->
+      <div class="lg:col-span-7 hud-box p-6 space-y-6">
+        <form id="contactForm" class="space-y-4 font-mono text-xs">
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="text-slate-400 text-[11px]">YOUR NAME [STRING]</label>
+              <input type="text" required placeholder="e.g. Alex Mercer" class="w-full bg-obsidian border border-slate-800 focus:border-cyan-400 text-white p-3 rounded outline-none transition-colors">
+            </div>
+            <div class="space-y-1">
+              <label class="text-slate-400 text-[11px]">YOUR EMAIL [ADDRESS]</label>
+              <input type="email" required placeholder="e.g. alex@studio.com" class="w-full bg-obsidian border border-slate-800 focus:border-cyan-400 text-white p-3 rounded outline-none transition-colors">
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-slate-400 text-[11px]">PROJECT TYPE [ENUM]</label>
+            <select class="w-full bg-obsidian border border-slate-800 focus:border-cyan-400 text-slate-300 p-3 rounded outline-none transition-colors">
+              <option>Game Jam Collaboration</option>
+              <option>Full Game Prototype</option>
+              <option>Level Design Blockout</option>
+              <option>General Inquiry</option>
+            </select>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-slate-400 text-[11px]">TRANSMISSION MESSAGE [TEXT]</label>
+            <textarea rows="4" required placeholder="Describe gameplay mechanics, project scope, or jam timeline..." class="w-full bg-obsidian border border-slate-800 focus:border-cyan-400 text-white p-3 rounded outline-none transition-colors resize-none"></textarea>
+          </div>
+
+          <!-- Live Terminal Submission Feedback -->
+          <div id="formTerminalLog" class="hidden bg-obsidian p-3 rounded border border-neongreen/40 text-neongreen text-[11px] space-y-1">
+            <div>&gt; PACKAGING TRANSMISSION PAYLOAD...</div>
+            <div>&gt; SOCKET CONNECTED: arivumadhidr@gmail.com</div>
+            <div class="text-gold font-bold">&gt; TRANSMISSION SENT SUCCESSFULLY!</div>
+          </div>
+
+          <button type="submit" class="w-full py-3.5 bg-cyan-400 hover:bg-cyan-300 text-obsidian font-bold text-xs rounded transition-all shadow-[0_0_15px_rgba(0,240,255,0.3)]">
+            TRANSMIT MESSAGE TO DEVELOPER
+          </button>
+
+        </form>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- MODAL POPUP FOR DETAILED PROJECT INSPECTION -->
+<div id="projectModal" class="fixed inset-0 z-50 hidden bg-obsidian/90 backdrop-blur-md flex items-center justify-center p-4">
+  <div class="hud-box max-w-2xl w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+    <div class="hud-corner-tl"></div>
+    <div class="hud-corner-br"></div>
+
+    <div class="flex justify-between items-start border-b border-cyan-400/20 pb-3">
+      <div>
+        <div id="modalCategory" class="font-mono text-[10px] text-cyan-400 uppercase">CATEGORY</div>
+        <h3 id="modalTitle" class="font-space text-2xl font-bold text-white">Project Title</h3>
+      </div>
+      <button id="closeModal" class="font-mono text-cyan-400 hover:text-crimson text-xl font-bold p-1">
+        [✕]
+      </button>
+    </div>
+
+    <div class="space-y-3 font-sans text-sm text-slate-300">
+      <p id="modalDesc" class="leading-relaxed">Detailed breakdown of mechanics and design rationale.</p>
+      
+      <div class="space-y-1 font-mono text-xs pt-2">
+        <div class="text-cyan-400 font-bold">KEY MECHANICS HIGHLIGHTS:</div>
+        <ul id="modalMechanics" class="list-disc list-inside space-y-1 text-slate-300">
+          <!-- Populated dynamically -->
+        </ul>
+      </div>
+
+      <div class="bg-obsidian/90 p-3 rounded border border-slate-800 font-mono text-xs space-y-1">
+        <div class="text-gold font-bold">TECH STACK / ENGINE:</div>
+        <div id="modalTech" class="text-slate-300">Unity, C#, Shader Graph</div>
+      </div>
+    </div>
+
+    <div class="flex justify-end pt-2">
+      <button id="closeModalBtn" class="font-mono text-xs font-bold px-5 py-2 bg-cyan-400 text-obsidian rounded hover:bg-cyan-300 transition-colors">
+        CLOSE INSPECTOR
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="mt-24 border-t border-cyan-400/20 bg-obsidian/90 py-8 text-center font-mono text-xs text-slate-500 relative z-10">
+  <div class="max-w-7xl mx-auto px-4 space-y-2">
+    <div>
+      Designed &amp; Developed by <strong class="text-cyan-400">Thaveanesh Kumar T</strong> &middot; Web designer
+    </div>
+    <div class="text-[10px] text-slate-600">
+      ARIVUMADHI.ENGINE v2.4 BUILD 2026.09 &copy; ALL RIGHTS RESERVED.
+    </div>
+  </div>
+</footer>
+
+<script>
+  // 1. Mobile Drawer Navigation Toggle
+  const mobileNavBtn = document.getElementById('mobileNavBtn');
+  const mobileDrawer = document.getElementById('mobileDrawer');
+  if (mobileNavBtn && mobileDrawer) {
+    mobileNavBtn.addEventListener('click', () => {
+      mobileDrawer.classList.toggle('hidden');
+    });
+  }
+
+  // 2. Dynamic Typewriter Cycle
+  const typewriterLines = [
+    "building combat state machines...",
+    "blocking out puzzle platformer levels...",
+    "optimizing player movement physics...",
+    "scripting C# & Unreal Blueprints..."
+  ];
+  let lineIdx = 0, charIdx = 0, isDeleting = false;
+  const typewriterEl = document.getElementById('typewriterText');
+
+  function typeCycle() {
+    const currentLine = typewriterLines[lineIdx];
+    if (!isDeleting) {
+      charIdx++;
+      typewriterEl.textContent = currentLine.slice(0, charIdx);
+      if (charIdx === currentLine.length) {
+        isDeleting = true;
+        setTimeout(typeCycle, 2000);
+        return;
+      }
+    } else {
+      charIdx--;
+      typewriterEl.textContent = currentLine.slice(0, charIdx);
+      if (charIdx === 0) {
+        isDeleting = false;
+        lineIdx = (lineIdx + 1) % typewriterLines.length;
+      }
+    }
+    setTimeout(typeCycle, isDeleting ? 30 : 60);
+  }
+  typeCycle();
+
+  // 3. Interactive 2D Physics Viewport Canvas Engine
+  const canvas = document.getElementById('engineCanvas');
+  const ctx = canvas ? canvas.getContext('2d') : null;
+
+  if (canvas && ctx) {
+    let canvasWidth, canvasHeight;
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      canvasWidth = rect.width;
+      canvasHeight = rect.height;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Physics Entity State
+    let ball = {
+      x: 100, y: 100,
+      radius: 14,
+      vx: 4, vy: 0,
+      gravity: 0.45,
+      bounce: 0.72,
+      friction: 0.985,
+      isDragging: false
+    };
+
+    let showGrid = true;
+    let wireframeMode = false;
+    let particles = [];
+
+    // Keys State
+    let keys = {};
+    window.addEventListener('keydown', e => keys[e.code] = true);
+    window.addEventListener('keyup', e => keys[e.code] = false);
+
+    // Mouse Drag State
+    let mouseX = 0, mouseY = 0, prevMouseX = 0, prevMouseY = 0;
+    
+    canvas.addEventListener('mousedown', e => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const dist = Math.hypot(mx - ball.x, my - ball.y);
+      if (dist < ball.radius * 2) {
+        ball.isDragging = true;
+      }
+    });
+
+    window.addEventListener('mousemove', e => {
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (ball.isDragging) {
+        ball.vx = (mouseX - prevMouseX) * 0.8;
+        ball.vy = (mouseY - prevMouseY) * 0.8;
+        ball.isDragging = false;
+      }
+    });
+
+    // Control Toggles
+    document.getElementById('toggleGrid').addEventListener('click', function() {
+      showGrid = !showGrid;
+      this.textContent = `GRID: ${showGrid ? 'ON' : 'OFF'}`;
+      this.classList.toggle('bg-cyan-400/10', showGrid);
+    });
+
+    document.getElementById('toggleWireframe').addEventListener('click', function() {
+      wireframeMode = !wireframeMode;
+      this.textContent = `WIREFRAME: ${wireframeMode ? 'ON' : 'OFF'}`;
+    });
+
+    document.getElementById('toggleGravity').addEventListener('click', function() {
+      ball.gravity *= -1;
+      this.textContent = `GRAVITY: ${ball.gravity > 0 ? 'DOWN' : 'UP'}`;
+    });
+
+    document.getElementById('resetPhysics').addEventListener('click', function() {
+      ball.x = canvasWidth / 2;
+      ball.y = 80;
+      ball.vx = 5;
+      ball.vy = 0;
+      ball.gravity = Math.abs(ball.gravity);
+      document.getElementById('toggleGravity').textContent = 'GRAVITY: DOWN';
+    });
+
+    // Particle Trail Logic
+    function addParticle(x, y) {
+      particles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 2,
+        vy: (Math.random() - 0.5) * 2,
+        life: 1.0
+      });
+    }
+
+    // Engine Render Loop
+    let lastTime = performance.now();
+    let frameCount = 0;
+
+    function renderEngine() {
+      const now = performance.now();
+      const dt = now - lastTime;
+      frameCount++;
+      if (frameCount % 10 === 0) {
+        document.getElementById('canvasFps').textContent = (1000 / dt).toFixed(1);
+        document.getElementById('frameTime').textContent = `${dt.toFixed(1)}ms`;
+      }
+      lastTime = now;
+
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+      // 1. Draw Grid
+      if (showGrid) {
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvasWidth; x += 25) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvasHeight); ctx.stroke();
+        }
+        for (let y = 0; y < canvasHeight; y += 25) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvasWidth, y); ctx.stroke();
+        }
+      }
+
+      // 2. Physics Movement Logic
+      if (ball.isDragging) {
+        ball.x = mouseX;
+        ball.y = mouseY;
+        ball.vx = mouseX - prevMouseX;
+        ball.vy = mouseY - prevMouseY;
+      } else {
+        // Keyboard Controls
+        if (keys['KeyA'] || keys['ArrowLeft']) ball.vx -= 0.35;
+        if (keys['KeyD'] || keys['ArrowRight']) ball.vx += 0.35;
+        if ((keys['KeyW'] || keys['ArrowUp'] || keys['Space']) && Math.abs(ball.y - (canvasHeight - ball.radius)) < 2) {
+          ball.vy = -9.5 * (ball.gravity > 0 ? 1 : -1);
+        }
+
+        ball.vy += ball.gravity;
+        ball.vx *= ball.friction;
+        ball.x += ball.vx;
+        ball.y += ball.vy;
+
+        // Boundaries Collision
+        if (ball.x + ball.radius > canvasWidth) {
+          ball.x = canvasWidth - ball.radius;
+          ball.vx *= -ball.bounce;
+        } else if (ball.x - ball.radius < 0) {
+          ball.x = ball.radius;
+          ball.vx *= -ball.bounce;
+        }
+
+        if (ball.y + ball.radius > canvasHeight) {
+          ball.y = canvasHeight - ball.radius;
+          ball.vy *= -ball.bounce;
+        } else if (ball.y - ball.radius < 0) {
+          ball.y = ball.radius;
+          ball.vy *= -ball.bounce;
+        }
+      }
+
+      prevMouseX = mouseX;
+      prevMouseY = mouseY;
+
+      // Add trail
+      if (Math.hypot(ball.vx, ball.vy) > 1) {
+        addParticle(ball.x, ball.y);
+      }
+
+      // Render Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.04;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+        ctx.fillStyle = `rgba(0, 240, 255, ${p.life * 0.5})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 3. Render Ball
+      if (wireframeMode) {
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        let grad = ctx.createRadialGradient(ball.x - 4, ball.y - 4, 2, ball.x, ball.y, ball.radius);
+        grad.addColorStop(0, '#00f0ff');
+        grad.addColorStop(1, '#002f38');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Update HUD Overlay Data
+      const speed = Math.hypot(ball.vx, ball.vy);
+      document.getElementById('entityPos').textContent = `X: ${Math.round(ball.x)} | Y: ${Math.round(ball.y)}`;
+      document.getElementById('entityVel').textContent = `${(speed * 10).toFixed(1)} px/s`;
+      
+      const isGrounded = Math.abs(ball.y - (canvasHeight - ball.radius)) < 1;
+      document.getElementById('physicsState').textContent = ball.isDragging ? 'MANUAL_DRAG' : (isGrounded ? 'GROUNDED' : 'AIRBORNE');
+
+      requestAnimationFrame(renderEngine);
+    }
+    renderEngine();
+  }
+
+  // 4. Skills Data & Interactive Inspector Panel
+  const skillsData = [
+    {
+      id: 'mechanics',
+      name: 'Game Mechanics & Systems',
+      pct: 85,
+      desc: 'Designing fluid combat loops, animation frame canceling, hitboxes/hurtboxes, and player movement feedback algorithms.',
+      lang: 'C# / UNITY',
+      engines: 'Unity, Unreal Engine 5',
+      usage: 'Action RPGs, Combat Demos',
+      code: `void ApplyKnockback(Vector3 dir, float force) {\n  rb.AddForce(dir.normalized * force, ForceMode.Impulse);\n  SetState(CharacterState.Stunned);\n}`
+    },
+    {
+      id: 'level',
+      name: 'Level & Spatial Design',
+      pct: 75,
+      desc: 'Structuring environmental flow, visual signaling, level blockouts, spatial puzzles, and pacing curves.',
+      lang: 'UNREAL ENGINE 5',
+      engines: 'Unreal Engine, ProBuilder',
+      usage: 'Puzzle Platformers, Modular Maps',
+      code: `// Level Flow Trigger Logic\nOnActorBeginOverlap.AddDynamic(this, &ALevelExit::TriggerVectorShift);`
+    },
+    {
+      id: 'scripting',
+      name: 'C# / Logic Scripting',
+      pct: 70,
+      desc: 'Object-oriented programming, custom player controllers, event buses, state machines, and save data serialization.',
+      lang: 'C# / .NET',
+      engines: 'Unity Engine',
+      usage: 'Game Architecture & State',
+      code: `public class StateMachine {\n  private IState currentState;\n  public void ChangeState(IState newState) {\n    currentState?.Exit();\n    currentState = newState;\n    currentState.Enter();\n  }\n}`
+    },
+    {
+      id: 'blueprints',
+      name: 'Unreal Engine Blueprints',
+      pct: 80,
+      desc: 'Visual scripting node graphs, character movement components, camera spring arm behaviors, and gameplay delegates.',
+      lang: 'BLUEPRINTS / UE5',
+      engines: 'Unreal Engine 5',
+      usage: 'Visual Logic Graphs',
+      code: `[Event Input PrimaryAttack] -> [Branch: IsStaminaValid] -> [Exec PlayAnimMontage]`
+    },
+    {
+      id: 'physics',
+      name: 'Physics & Math Logic',
+      pct: 75,
+      desc: 'RigidBody dynamics, raycasting, vector dot/cross product calculations, trajectory prediction, and custom gravity vectors.',
+      lang: 'MATH & VECTOR PHYSICS',
+      engines: 'Physics Engines (PhysX)',
+      usage: 'Spatial Traversal, Puzzles',
+      code: `Vector3 gravityDir = (targetPlanet.position - transform.position).normalized;\nrb.AddForce(gravityDir * gravityMagnitude);`
+    },
+    {
+      id: 'ai',
+      name: 'Behavior Tree AI',
+      pct: 65,
+      desc: 'Modular AI decision making, line-of-sight detection, patrol routes, alert state transitions, and tactical positioning.',
+      lang: 'C# / BLUEPRINTS',
+      engines: 'Unity / Unreal AI',
+      usage: 'Enemy AI Behaviors',
+      code: `if (CanSeeTarget(playerTransform)) {\n  SetBlackboardKey("Target", playerTransform);\n  ChangeAIState(AIState.Chase);\n}`
+    }
+  ];
+
+  const skillsContainer = document.getElementById('skillsContainer');
+  const inspectorTitle = document.getElementById('inspectorTitle');
+  const inspectorLevel = document.getElementById('inspectorLevel');
+  const inspectorDesc = document.getElementById('inspectorDesc');
+  const inspectorLang = document.getElementById('inspectorLang');
+  const inspectorCode = document.getElementById('inspectorCode');
+  const inspectorEngines = document.getElementById('inspectorEngines');
+  const inspectorUsage = document.getElementById('inspectorUsage');
+
+  function renderSkills() {
+    skillsContainer.innerHTML = '';
+    skillsData.forEach((skill, idx) => {
+      const card = document.createElement('div');
+      card.className = `hud-box p-4 cursor-pointer hover:border-cyan-400 transition-all ${idx === 0 ? 'border-cyan-400 bg-cyan-400/5' : ''}`;
+      card.innerHTML = `
+        <div class="flex justify-between items-center text-xs mb-2">
+          <span class="text-white font-bold">${skill.name}</span>
+          <span class="text-cyan-400 font-bold">${skill.pct}%</span>
+        </div>
+        <div class="w-full bg-slate-900 h-2 rounded border border-slate-800 p-0.5">
+          <div class="bg-gradient-to-r from-crimson to-cyan-400 h-full rounded" style="width: ${skill.pct}%"></div>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        document.querySelectorAll('#skillsContainer > div').forEach(el => {
+          el.classList.remove('border-cyan-400', 'bg-cyan-400/5');
+        });
+        card.classList.add('border-cyan-400', 'bg-cyan-400/5');
+
+        // Update Inspector Box
+        inspectorTitle.textContent = skill.name;
+        inspectorLevel.textContent = `${skill.pct}% PROFICIENCY`;
+        inspectorDesc.textContent = skill.desc;
+        inspectorLang.textContent = skill.lang;
+        inspectorCode.textContent = skill.code;
+        inspectorEngines.textContent = skill.engines;
+        inspectorUsage.textContent = skill.usage;
+      });
+
+      skillsContainer.appendChild(card);
+    });
+  }
+  renderSkills();
+
+  // 5. Featured Projects Data & Dynamic Filter Pipeline
+  const projectsData = [
+    {
+      id: 'aether',
+      category: 'combat',
+      categoryLabel: 'COMBAT & RPG',
+      title: 'PROJECT AETHER: ACTION RPG COMBAT',
+      shortDesc: 'Responsive combat flow, frame-perfect dodge windows, hitboxes, and enemy behavior AI state machine built in Unity.',
+      fullDesc: 'Project Aether is a high-speed combat prototype designed to test melee collision precision, animation canceling, and enemy AI reactions.',
+      mechanics: ['Frame-perfect parry and dodge cancels', 'Modular enemy AI behavior trees', 'Raycast hitbox detection with dynamic hitstop'],
+      tech: 'Unity Engine, C#, Shader Graph, Universal Render Pipeline'
+    },
+    {
+      id: 'gravity',
+      category: 'puzzle',
+      categoryLabel: 'PUZZLE & PHYSICS',
+      title: 'GRAVITY SHIFT: PUZZLE PLATFORMER',
+      shortDesc: 'Spatial physics platformer where players manipulate gravity vectors to solve level blockout challenges.',
+      fullDesc: 'Gravity Shift tests 3D orientation traversal where altering gravity reorients the player and environmental rigidbodies.',
+      mechanics: ['Custom gravity vector reorientation', 'Interactive momentum launchpads', 'Modular level blockouts and spatial navigation'],
+      tech: 'Unreal Engine 5, C++, Blueprints'
+    },
+    {
+      id: 'nexus',
+      category: 'tools',
+      categoryLabel: 'SYSTEMS & TOOLS',
+      title: 'NEXUS MOVEMENT SYSTEM',
+      shortDesc: 'FPS movement controller with wall-running, dynamic slide mechanics, and procedural camera sway algorithms.',
+      fullDesc: 'A lightweight modular movement framework designed for first-person action games prioritizing momentum retention.',
+      mechanics: ['Wall-running & ledge vaulting physics', 'Slope acceleration slide mechanics', 'Procedural camera sway and view bobbing'],
+      tech: 'Unity Engine, C#'
+    },
+    {
+      id: 'behavior',
+      category: 'tools',
+      categoryLabel: 'SYSTEMS & TOOLS',
+      title: 'BEHAVIOR TREE AI FRAMEWORK',
+      shortDesc: 'Visual modular AI system supporting tactical pathfinding, alert states, and squad positioning.',
+      fullDesc: 'An extensible node-based AI state framework allowing rapid creation of enemy behaviors and squad tactics.',
+      mechanics: ['Line-of-sight vision cones', 'Dynamic cover positioning nodes', 'Alert state broadcast network'],
+      tech: 'Unreal Engine Blueprints'
+    }
+  ];
+
+  const projectsGrid = document.getElementById('projectsGrid');
+  const projectFilters = document.querySelectorAll('.filter-btn');
+
+  function renderProjects(filter = 'all') {
+    projectsGrid.innerHTML = '';
+    const filtered = filter === 'all' ? projectsData : projectsData.filter(p => p.category === filter);
+
+    filtered.forEach(proj => {
+      const card = document.createElement('div');
+      card.className = 'hud-box p-6 space-y-4 flex flex-col justify-between group';
+      card.innerHTML = `
+        <div class="space-y-3">
+          <div class="flex justify-between items-center font-mono text-[11px]">
+            <span class="text-cyan-400 bg-cyan-400/10 border border-cyan-400/30 px-2 py-0.5 rounded">${proj.categoryLabel}</span>
+            <span class="text-slate-500">PROTOTYPE</span>
+          </div>
+
+          <h3 class="font-space text-lg font-bold text-white group-hover:text-cyan-400 transition-colors">${proj.title}</h3>
+          
+          <p class="text-slate-300 text-sm leading-relaxed font-sans">${proj.shortDesc}</p>
+
+          <div class="bg-obsidian/80 p-3 rounded border border-slate-800 font-mono text-[11px] text-slate-400">
+            <span class="text-gold font-bold">TECH:</span> ${proj.tech}
+          </div>
+        </div>
+
+        <button class="inspect-btn font-mono text-xs font-bold text-crimson hover:text-white pt-2 flex items-center gap-1 transition-colors" data-id="${proj.id}">
+          INSPECT PROJECT DETAILS →
+        </button>
+      `;
+      projectsGrid.appendChild(card);
+    });
+
+    // Attach inspect click listeners
+    document.querySelectorAll('.inspect-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        const proj = projectsData.find(p => p.id === id);
+        if (proj) openModal(proj);
+      });
+    });
+  }
+  renderProjects();
+
+  // Filter Button click pipeline
+  projectFilters.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      projectFilters.forEach(b => {
+        b.classList.remove('bg-cyan-400', 'text-obsidian', 'font-bold');
+        b.classList.add('bg-slate-800', 'text-slate-300');
+      });
+      e.currentTarget.classList.remove('bg-slate-800', 'text-slate-300');
+      e.currentTarget.classList.add('bg-cyan-400', 'text-obsidian', 'font-bold');
+
+      renderProjects(e.currentTarget.dataset.filter);
+    });
+  });
+
+  // Modal Controller
+  const projectModal = document.getElementById('projectModal');
+  const closeModal = document.getElementById('closeModal');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+
+  function openModal(proj) {
+    document.getElementById('modalCategory').textContent = proj.categoryLabel;
+    document.getElementById('modalTitle').textContent = proj.title;
+    document.getElementById('modalDesc').textContent = proj.fullDesc;
+    document.getElementById('modalTech').textContent = proj.tech;
+
+    const mechUl = document.getElementById('modalMechanics');
+    mechUl.innerHTML = '';
+    proj.mechanics.forEach(m => {
+      const li = document.createElement('li');
+      li.textContent = m;
+      mechUl.appendChild(li);
+    });
+
+    projectModal.classList.remove('hidden');
+  }
+
+  function hideModal() {
+    projectModal.classList.add('hidden');
+  }
+
+  if (closeModal) closeModal.addEventListener('click', hideModal);
+  if (closeModalBtn) closeModalBtn.addEventListener('click', hideModal);
+
+  // 6. Interactive Draggable Blueprint Node Graph
+  const svg = document.getElementById('nodeSvg');
+  const node1 = document.getElementById('node1');
+  const node2 = document.getElementById('node2');
+  const node3 = document.getElementById('node3');
+
+  function updateLines() {
+    if (!svg || !node1 || !node2 || !node3) return;
+    svg.innerHTML = '';
+
+    const containerRect = svg.getBoundingClientRect();
+
+    function getCenter(el) {
+      const rect = el.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2 - containerRect.left,
+        y: rect.top + rect.height / 2 - containerRect.top
+      };
+    }
+
+    const pin1 = document.querySelector('[data-pin="n1-out"]');
+    const pin2in = document.querySelector('[data-pin="n2-in"]');
+    const pin2true = document.querySelector('[data-pin="n2-true"]');
+    const pin3in = document.querySelector('[data-pin="n3-in"]');
+
+    if (pin1 && pin2in) drawCurvedLine(getCenter(pin1), getCenter(pin2in), '#00f0ff');
+    if (pin2true && pin3in) drawCurvedLine(getCenter(pin2true), getCenter(pin3in), '#00ff88');
+  }
+
+  function drawCurvedLine(p1, p2, color) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const dx = Math.abs(p2.x - p1.x) * 0.5;
+    const d = `M ${p1.x} ${p1.y} C ${p1.x + dx} ${p1.y}, ${p2.x - dx} ${p2.y}, ${p2.x} ${p2.y}`;
+    path.setAttribute('d', d);
+    path.setAttribute('stroke', color);
+    path.setAttribute('stroke-width', '3');
+    path.setAttribute('fill', 'none');
+    svg.appendChild(path);
+  }
+
+  function makeDraggable(el) {
+    let isDragging = false, startX, startY, origLeft, origTop;
+
+    el.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      origLeft = el.offsetLeft;
+      origTop = el.offsetTop;
+      el.style.zIndex = '30';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      el.style.left = `${origLeft + dx}px`;
+      el.style.top = `${origTop + dy}px`;
+      updateLines();
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        el.style.zIndex = '10';
+      }
+    });
+  }
+
+  if (node1) makeDraggable(node1);
+  if (node2) makeDraggable(node2);
+  if (node3) makeDraggable(node3);
+  setTimeout(updateLines, 200);
+
+  // 7. Terminal Contact Form Simulation
+  const contactForm = document.getElementById('contactForm');
+  const formTerminalLog = document.getElementById('formTerminalLog');
+
+  if (contactForm) {
+    contactForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      formTerminalLog.classList.remove('hidden');
+      setTimeout(() => {
+        contactForm.reset();
+      }, 3000);
+    });
+  }
+
+  // 8. Intersection Observer for Scroll Reveals
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('section').forEach(sec => {
+    sec.classList.add('reveal-item');
+    observer.observe(sec);
+  });
+</script>
+
+</body>
+</html>
